@@ -1,0 +1,35 @@
+---
+- name: Установка зависимостей
+  yum:
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+    state: present
+
+- name: Добавление официального репозитория Docker
+  command: >
+    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  args:
+    creates: /etc/yum.repos.d/docker-ce.repo
+
+- name: Установка Docker
+  yum:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: latest
+
+- name: Включение и запуск Docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Добавление пользователя vagrant в группу docker
+  user:
+    name: vagrant
+    groups: docker
+    append: yes
+

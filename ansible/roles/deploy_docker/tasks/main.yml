@@ -1,0 +1,42 @@
+---
+- name: Копирование файлов микросервиса на сервер
+  copy:
+    src: ../microservice/
+    dest: /opt/microservice/
+    owner: root
+    group: root
+    mode: '0755'
+    
+- name: Проверка наличия Dockerfile
+  stat:
+    path: /opt/microservice/Dockerfile
+  register: dockerfile_check
+
+- name: Развертывание в Docker
+  include_role:
+    name: install_docker
+
+- name: Построение Docker-образа микросервиса
+  docker_image:
+    name: "prometheus-metrics"
+    tag: latest
+    build:
+      path: /opt/microservice
+    source: build
+  when: dockerfile_check.stat.exists
+
+- name: Удаление старого контейнера (если есть)
+  docker_container:
+    name: "prometheus-metrics-server"
+    state: absent
+    force_kill: yes
+
+- name: Запуск микросервиса в контейнере
+  docker_container:
+    name: "prometheus-metrics-server"
+    image: "prometheus-metrics:latest"
+    state: started
+    restart_policy: always
+    ports:
+      - "8080:8080"
+

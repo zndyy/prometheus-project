@@ -1,0 +1,56 @@
+---
+- name: Установка необходимых зависимостей для сервера
+  yum:
+    name:
+      - python3
+      - python3-pip
+    state: present
+
+- name: Копирование файлов микросервиса на сервер
+  copy:
+    src: ../microservice/
+    dest: /opt/microservice/
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Установка зависимостей с помощью pip
+  pip:
+    requirements: /opt/microservice/requirements.txt
+    state: present
+
+- name: Создание unit-файла для сервиса на сервере
+  copy:
+    dest: /etc/systemd/system/prometheus-metrics-server.service
+    content: |
+      [Unit]
+      Description=Prometheus Metrics Server
+      After=network.target
+
+      [Service]
+      User=root
+      ExecStart=/usr/bin/python3 /opt/microservice/app.py
+      WorkingDirectory=/opt/microservice
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Перезагрузить systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Запуск сервиса Prometheus Metrics Server на сервере
+  systemd:
+    name: prometheus-metrics-server
+    state: started
+    enabled: yes
+
+- name: Проверить статус сервиса на сервере
+  command: systemctl status prometheus-metrics-server
+  register: service_status
+  ignore_errors: yes
+
+- name: Печать статуса сервиса на сервере
+  debug:
+    var: service_status.stdout

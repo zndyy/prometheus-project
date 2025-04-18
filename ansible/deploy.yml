@@ -1,0 +1,17 @@
+---
+- name: Deploy microservice
+  hosts: vagrant
+  become: yes
+  vars:
+    deploy_method: "server" 
+
+  tasks:
+    - name: Развертывание на сервере
+      include_role:
+        name: deploy_server
+      when: deploy_method == "server"
+
+    - name: Развертывание в Docker
+      include_role:
+        name: deploy_docker
+      when: deploy_method == "docker"
